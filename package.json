@@ -5,7 +5,10 @@
   "author": "First Last <first.last@example.com>",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "lint": "node --check server.js && node --check smoke-test.js",
+    "build": "echo \"Build script completed\"",
+    "test": "node smoke-test.js"
   },
   "dependencies": {
     "express": "^4.16.1"
