@@ -1,0 +1,69 @@
+pipeline {
+  agent any
+
+  parameters {
+    choice(name: 'TARGET_ENV', choices: ['main', 'dev'], description: 'Environment to deploy')
+    string(name: 'IMAGE_TAG', defaultValue: 'v1.0', description: 'Docker image tag')
+    string(name: 'DOCKERHUB_REPOSITORY', defaultValue: '', description: 'Optional Docker Hub namespace/repository (example: username/repo)')
+  }
+
+  environment {
+    APP_INTERNAL_PORT = "3000"
+  }
+
+  stages {
+    stage('Resolve deployment target') {
+      steps {
+        script {
+          if (params.TARGET_ENV == 'main') {
+            env.IMAGE_BASE = 'nodemain'
+            env.CONTAINER_NAME = 'node-main'
+            env.APP_PORT = '3000'
+          } else {
+            env.IMAGE_BASE = 'nodedev'
+            env.CONTAINER_NAME = 'node-dev'
+            env.APP_PORT = '3001'
+          }
+
+          env.IMAGE_NAME = "${env.IMAGE_BASE}:${params.IMAGE_TAG}"
+          if (params.DOCKERHUB_REPOSITORY?.trim()) {
+            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${params.IMAGE_TAG}"
+          }
+
+          echo "Target env: ${params.TARGET_ENV}"
+          echo "Container name: ${env.CONTAINER_NAME}"
+          echo "Port: ${env.APP_PORT}"
+          echo "Image: ${env.IMAGE_NAME}"
+        }
+      }
+    }
+
+    stage('Pull image (optional)') {
+      when {
+        expression { return params.DOCKERHUB_REPOSITORY?.trim() }
+      }
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            set -e
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker pull ${IMAGE_NAME}
+          '''
+        }
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        sh '''
+          set -e
+          if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+            docker rm -f ${CONTAINER_NAME}
+          fi
+          docker run -d --name ${CONTAINER_NAME} -e PORT=${APP_INTERNAL_PORT} -p ${APP_PORT}:${APP_INTERNAL_PORT} ${IMAGE_NAME}
+        '''
+      }
+    }
+  }
+}
+

@@ -1,8 +1,5 @@
-FROM node:14
-WORKDIR /usr/src/app
-COPY package*.json ./
+FROM node:7.8.0
+WORKDIR /opt
+ADD . /opt
 RUN npm install
-RUN npm install express
-COPY . .
-EXPOSE 3000
-CMD [ "node", "server.js" ]
+ENTRYPOINT npm run start
