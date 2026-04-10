@@ -54,38 +54,32 @@ pipeline {
     }
 
     stage('Dockerfile lint (Hadolint)') {
-      agent {
-        docker {
-          image 'hadolint/hadolint:latest-debian'
-          reuseNode true
-        }
-      }
       steps {
-        sh 'hadolint --failure-threshold error Dockerfile'
+        sh '''
+          set -e
+          docker run --rm -v "$PWD:/workspace" -w /workspace hadolint/hadolint:latest-debian \
+            hadolint --failure-threshold error Dockerfile
+        '''
       }
     }
 
     stage('Build') {
-      agent {
-        docker {
-          image 'node:20-alpine'
-          reuseNode true
-        }
-      }
       steps {
-        sh 'npm install'
+        sh '''
+          set -e
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace node:20-alpine \
+            sh -lc "npm install"
+        '''
       }
     }
 
     stage('Test') {
-      agent {
-        docker {
-          image 'node:20-alpine'
-          reuseNode true
-        }
-      }
       steps {
-        sh 'npm test'
+        sh '''
+          set -e
+          docker run --rm -u "$(id -u):$(id -g)" -e CI=true -v "$PWD:/workspace" -w /workspace node:20-alpine \
+            sh -lc "npm test -- --watchAll=false"
+        '''
       }
     }
 
