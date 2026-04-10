@@ -38,11 +38,7 @@ pipeline {
 
           env.IMAGE_NAME = "${env.IMAGE_BASE}:${env.IMAGE_TAG}"
           env.DOCKER_REMOTE_IMAGE = ""
-
-          if (env.DOCKERHUB_REPOSITORY?.trim()) {
-            def dockerNamespace = env.DOCKERHUB_REPOSITORY.tokenize('/')[0]
-            env.DOCKER_REMOTE_IMAGE = "${dockerNamespace}/${env.IMAGE_BASE}:${env.IMAGE_TAG}"
-          }
+          env.DOCKERHUB_EFFECTIVE_NAMESPACE = ""
 
           echo "Environment: ${env.TARGET_ENV}"
           echo "Port: ${env.APP_PORT}"
@@ -108,11 +104,15 @@ pipeline {
     }
 
     stage('Push Docker image') {
-      when {
-        expression { return env.DOCKER_REMOTE_IMAGE?.trim() }
-      }
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          script {
+            def configuredNamespace = env.DOCKERHUB_REPOSITORY?.trim()
+            def dockerNamespace = configuredNamespace ? configuredNamespace.tokenize('/')[0] : env.DOCKER_USER
+            env.DOCKERHUB_EFFECTIVE_NAMESPACE = dockerNamespace
+            env.DOCKER_REMOTE_IMAGE = "${dockerNamespace}/${env.IMAGE_BASE}:${env.IMAGE_TAG}"
+            echo "Resolved Docker image for push: ${env.DOCKER_REMOTE_IMAGE}"
+          }
           sh '''
             set -e
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
@@ -138,7 +138,7 @@ pipeline {
     stage('Trigger environment deployment job') {
       when {
         expression {
-          return env.DOCKER_REMOTE_IMAGE?.trim() && env.ENABLE_DOWNSTREAM_DEPLOY == 'true'
+          return env.ENABLE_DOWNSTREAM_DEPLOY == 'true'
         }
       }
       steps {
@@ -149,7 +149,7 @@ pipeline {
             propagate: false,
             parameters: [
               string(name: 'IMAGE_TAG', value: env.IMAGE_TAG),
-              string(name: 'DOCKERHUB_REPOSITORY', value: env.DOCKERHUB_REPOSITORY ?: '')
+              string(name: 'DOCKERHUB_REPOSITORY', value: env.DOCKERHUB_EFFECTIVE_NAMESPACE ?: env.DOCKERHUB_REPOSITORY ?: '')
             ]
         }
       }

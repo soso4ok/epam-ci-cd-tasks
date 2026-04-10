@@ -9,14 +9,12 @@ pipeline {
   stages {
     stage('Pull main image') {
       steps {
-        script {
-          if (!params.DOCKERHUB_REPOSITORY?.trim()) {
-            error('DOCKERHUB_REPOSITORY is required for Deploy_to_main.')
-          }
-          def dockerNamespace = params.DOCKERHUB_REPOSITORY.tokenize('/')[0]
-          env.IMAGE_NAME = "${dockerNamespace}/nodemain:${params.IMAGE_TAG}"
-        }
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          script {
+            def dockerNamespace = params.DOCKERHUB_REPOSITORY?.trim() ? params.DOCKERHUB_REPOSITORY.tokenize('/')[0] : env.DOCKER_USER
+            env.IMAGE_NAME = "${dockerNamespace}/nodemain:${params.IMAGE_TAG}"
+            echo "Resolved image: ${env.IMAGE_NAME}"
+          }
           sh '''
             set -e
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin

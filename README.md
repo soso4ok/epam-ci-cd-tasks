@@ -42,8 +42,9 @@ The project uses a React demo app from `epam-msdp/cicd-pipeline` and branch-spec
 
 - `username`
 - `username/repository`
+- empty value (pipeline falls back to Docker Hub username from `dockerhub-creds`)
 
-In both cases, pipelines use the Docker Hub namespace (`username`) and always push/pull canonical image names:
+In all cases, pipelines use the Docker Hub namespace (`username`) and always push/pull canonical image names:
 
 - `username/nodemain:v1.0`
 - `username/nodedev:v1.0`
@@ -65,14 +66,14 @@ Pipeline stages:
 5. Test in Docker agent (`node:20-alpine`)
 6. Build Docker image
 7. Vulnerability scan with Trivy
-8. Push to Docker Hub (if `DOCKERHUB_REPOSITORY` is set in Jenkins env)
+8. Push to Docker Hub (always, using `DOCKERHUB_REPOSITORY` namespace or credential username)
 9. Deploy container on branch port (only container for selected env is replaced)
 10. Automatically trigger downstream deploy job for matching branch (`Deploy_to_main` / `Deploy_to_dev`)
 
 Pipeline environment variables:
 
 - `IMAGE_TAG` (default `v1.0`)
-- `DOCKERHUB_REPOSITORY` (required for push and downstream jobs)
+- `DOCKERHUB_REPOSITORY` (optional; if empty, Docker Hub username from credentials is used)
 - `ENABLE_DOWNSTREAM_DEPLOY` (default `true`)
 
 ## Manual job (`CD_deploy_manual`)
@@ -95,7 +96,7 @@ Create two regular Pipeline jobs:
 - `Deploy_to_main` using `Jenkinsfile.deploy-main`
 - `Deploy_to_dev` using `Jenkinsfile.deploy-dev`
 
-Both jobs expect `DOCKERHUB_REPOSITORY` and `IMAGE_TAG`, pull canonical image names from Docker Hub, then deploy to:
+Both jobs use `IMAGE_TAG` and optional `DOCKERHUB_REPOSITORY`, pull canonical image names from Docker Hub, then deploy to:
 
 - main: `3000 -> 3000`
 - dev: `3001 -> 3000`
