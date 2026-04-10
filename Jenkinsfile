@@ -57,8 +57,8 @@ pipeline {
       steps {
         sh '''
           set -e
-          docker run --rm -v "$PWD:/workspace" -w /workspace hadolint/hadolint:latest-debian \
-            hadolint --failure-threshold error Dockerfile
+          docker run --rm -i hadolint/hadolint:latest-debian \
+            hadolint --failure-threshold error - < Dockerfile
         '''
       }
     }
@@ -67,8 +67,13 @@ pipeline {
       steps {
         sh '''
           set -e
-          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace node:20-alpine \
-            sh -lc "npm install"
+          tar -cf - . | docker run --rm -i node:20-alpine sh -lc '
+            set -e
+            mkdir -p /workspace
+            tar -xf - -C /workspace
+            cd /workspace
+            npm install
+          '
         '''
       }
     }
@@ -77,8 +82,14 @@ pipeline {
       steps {
         sh '''
           set -e
-          docker run --rm -u "$(id -u):$(id -g)" -e CI=true -v "$PWD:/workspace" -w /workspace node:20-alpine \
-            sh -lc "npm test -- --watchAll=false"
+          tar -cf - . | docker run --rm -i -e CI=true node:20-alpine sh -lc '
+            set -e
+            mkdir -p /workspace
+            tar -xf - -C /workspace
+            cd /workspace
+            npm install
+            npm test -- --watchAll=false
+          '
         '''
       }
     }
