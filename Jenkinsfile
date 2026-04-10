@@ -112,7 +112,7 @@ pipeline {
 
     stage('Push Docker image') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        withCredentials([usernamePassword(credentialsId: 'dc2b66fe-8681-4187-be14-61a8af23e7bc', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           script {
             def configuredNamespace = env.DOCKERHUB_REPOSITORY?.trim()
             def dockerNamespace = configuredNamespace ? configuredNamespace.tokenize('/')[0] : env.DOCKER_USER
