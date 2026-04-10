@@ -27,11 +27,8 @@ pipeline {
 
           env.IMAGE_NAME = "${env.IMAGE_BASE}:${params.IMAGE_TAG}"
           if (params.DOCKERHUB_REPOSITORY?.trim()) {
-            if (params.DOCKERHUB_REPOSITORY.contains('/')) {
-              env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:${env.IMAGE_BASE}-${params.IMAGE_TAG}"
-            } else {
-              env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${params.IMAGE_TAG}"
-            }
+            def dockerNamespace = params.DOCKERHUB_REPOSITORY.tokenize('/')[0]
+            env.IMAGE_NAME = "${dockerNamespace}/${env.IMAGE_BASE}:${params.IMAGE_TAG}"
           }
 
           echo "Target env: ${params.TARGET_ENV}"

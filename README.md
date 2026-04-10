@@ -36,16 +36,17 @@ The project uses a React demo app from `epam-msdp/cicd-pipeline` and branch-spec
    - Docker Hub credentials ID: `dockerhub-creds`
    - GitHub token credential for SCM access/webhooks (if needed)
 
-## Docker image naming modes
+## Docker image naming
 
-`DOCKERHUB_REPOSITORY` supports two formats:
+`DOCKERHUB_REPOSITORY` accepts either:
 
-- Namespace only (example: `vovo403`):
-  - main image: `vovo403/nodemain:v1.0`
-  - dev image: `vovo403/nodedev:v1.0`
-- Full repository (example: `vovo403/epam-test-repository`):
-  - main image: `vovo403/epam-test-repository:nodemain-v1.0`
-  - dev image: `vovo403/epam-test-repository:nodedev-v1.0`
+- `username`
+- `username/repository`
+
+In both cases, pipelines use the Docker Hub namespace (`username`) and always push/pull canonical image names:
+
+- `username/nodemain:v1.0`
+- `username/nodedev:v1.0`
 
 ## Main multibranch job (`CICD`)
 
@@ -94,7 +95,7 @@ Create two regular Pipeline jobs:
 - `Deploy_to_main` using `Jenkinsfile.deploy-main`
 - `Deploy_to_dev` using `Jenkinsfile.deploy-dev`
 
-Both jobs expect `DOCKERHUB_REPOSITORY` and `IMAGE_TAG`, resolve image name using the modes above, pull from Docker Hub, then deploy to:
+Both jobs expect `DOCKERHUB_REPOSITORY` and `IMAGE_TAG`, pull canonical image names from Docker Hub, then deploy to:
 
 - main: `3000 -> 3000`
 - dev: `3001 -> 3000`
