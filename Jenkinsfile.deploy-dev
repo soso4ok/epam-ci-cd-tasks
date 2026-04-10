@@ -31,7 +31,7 @@ pipeline {
           if docker ps -a --format '{{.Names}}' | grep -q '^nodedev$'; then
             docker rm -f nodedev
           fi
-          docker run -d --name nodedev -e PORT=3000 -p 3001:3000 ${IMAGE_NAME}
+          docker run -d --name nodedev --expose 3001 -e PORT=3000 -p 3001:3000 ${IMAGE_NAME}
         '''
       }
     }

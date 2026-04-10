@@ -6,6 +6,7 @@ pipeline {
   }
 
   environment {
+    CI = "true"
     IMAGE_TAG = "v1.0"
     APP_INTERNAL_PORT = "3000"
     DOCKERHUB_REPOSITORY = ""
@@ -27,11 +28,13 @@ pipeline {
             env.IMAGE_BASE = 'nodemain'
             env.CONTAINER_NAME = 'nodemain'
             env.APP_PORT = '3000'
+            env.APP_EXPOSE_PORT = '3000'
           } else if (env.BRANCH_NAME == 'dev') {
             env.TARGET_ENV = 'dev'
             env.IMAGE_BASE = 'nodedev'
             env.CONTAINER_NAME = 'nodedev'
             env.APP_PORT = '3001'
+            env.APP_EXPOSE_PORT = '3001'
           } else {
             error("Unsupported branch '${env.BRANCH_NAME}'. Use main or dev.")
           }
@@ -71,7 +74,6 @@ pipeline {
       }
       steps {
         sh 'npm install'
-        sh 'npm run build'
       }
     }
 
@@ -83,7 +85,7 @@ pipeline {
         }
       }
       steps {
-        sh 'CI=true npm test -- --watchAll=false'
+        sh 'npm test'
       }
     }
 
@@ -130,7 +132,7 @@ pipeline {
           if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
             docker rm -f ${CONTAINER_NAME}
           fi
-          docker run -d --name ${CONTAINER_NAME} -e PORT=${APP_INTERNAL_PORT} -p ${APP_PORT}:${APP_INTERNAL_PORT} ${IMAGE_NAME}
+          docker run -d --name ${CONTAINER_NAME} --expose ${APP_EXPOSE_PORT} -e PORT=${APP_INTERNAL_PORT} -p ${APP_PORT}:${APP_INTERNAL_PORT} ${IMAGE_NAME}
         '''
       }
     }
