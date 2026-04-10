@@ -15,9 +15,6 @@ pipeline {
           }
           if (params.DOCKERHUB_REPOSITORY.contains('/')) {
             env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:dev-${params.IMAGE_TAG}"
-          } else {
-            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/dev:${params.IMAGE_TAG}"
-          }
         }
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
