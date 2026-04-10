@@ -4,9 +4,11 @@ This repository is prepared for the Jenkins lab with two branch-based environmen
 
 - `main` environment:
   - docker image: `nodemain:v1.0`
+  - container name: `nodemain`
   - deployment URL: `http://localhost:3000`
 - `dev` environment:
   - docker image: `nodedev:v1.0`
+  - container name: `nodedev`
   - deployment URL: `http://localhost:3001`
 
 The project uses a React demo app from `epam-msdp/cicd-pipeline` and branch-specific `src/logo.svg`.
@@ -15,8 +17,9 @@ The project uses a React demo app from `epam-msdp/cicd-pipeline` and branch-spec
 
 - `Jenkinsfile` - multibranch pipeline for job name `CICD`
 - `Jenkinsfile.manual` - manual pipeline for job name `CD_deploy_manual`
-- `Jenkinsfile.deploy-main` - optional downstream deploy pipeline `Deploy_to_main`
-- `Jenkinsfile.deploy-dev` - optional downstream deploy pipeline `Deploy_to_dev`
+- `Jenkinsfile.deploy-main` - downstream deploy pipeline `Deploy_to_main`
+- `Jenkinsfile.deploy-dev` - downstream deploy pipeline `Deploy_to_dev`
+- `jenkins-shared-library/vars/*` - Shared Library helper functions (for documentation and reuse)
 
 ## Required Jenkins setup
 
@@ -56,12 +59,20 @@ Pipeline stages:
 
 1. Checkout
 2. Prepare environment by branch
-3. Build (`npm install`, `npm run build`)
-4. Test (`CI=true npm test -- --watchAll=false`)
-5. Build Docker image
-6. Optional push to Docker Hub (if `DOCKERHUB_REPOSITORY` is set in Jenkins env)
-7. Deploy container on branch port
-8. Optional trigger of downstream jobs (`Deploy_to_main` / `Deploy_to_dev`) if `TRIGGER_DEPLOY_JOBS=true`
+3. Dockerfile lint with Hadolint
+4. Build in Docker agent (`node:20-alpine`)
+5. Test in Docker agent (`node:20-alpine`)
+6. Build Docker image
+7. Vulnerability scan with Trivy
+8. Push to Docker Hub (if `DOCKERHUB_REPOSITORY` is set in Jenkins env)
+9. Deploy container on branch port (only container for selected env is replaced)
+10. Automatically trigger downstream deploy job for matching branch (`Deploy_to_main` / `Deploy_to_dev`)
+
+Pipeline environment variables:
+
+- `IMAGE_TAG` (default `v1.0`)
+- `DOCKERHUB_REPOSITORY` (required for push and downstream jobs)
+- `ENABLE_DOWNSTREAM_DEPLOY` (default `true`)
 
 ## Manual job (`CD_deploy_manual`)
 
@@ -87,6 +98,21 @@ Both jobs expect `DOCKERHUB_REPOSITORY` and `IMAGE_TAG`, resolve image name usin
 
 - main: `3000 -> 3000`
 - dev: `3001 -> 3000`
+
+## Shared Library (documentation)
+
+This repository includes a sample Shared Library skeleton in `jenkins-shared-library/vars/`:
+
+- `cicdBranchConfig.groovy` - branch to environment mapping
+- `cicdResolveImageName.groovy` - Docker image naming logic
+- `cicdDeployContainer.groovy` - env-specific container replacement logic
+
+To use it in Jenkins:
+
+1. Create a separate repository for the Shared Library and copy `jenkins-shared-library/*` into its root.
+2. In Jenkins: **Manage Jenkins -> System -> Global Trusted Pipeline Libraries**.
+3. Add library (for example name `cicd-shared-lib`) and point to the Shared Library repository.
+4. In pipelines, load with `@Library('cicd-shared-lib') _`.
 
 ## Branch-specific logo requirement
 

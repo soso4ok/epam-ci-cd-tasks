@@ -33,10 +33,10 @@ pipeline {
       steps {
         sh '''
           set -e
-          if docker ps -a --format '{{.Names}}' | grep -q '^node-main$'; then
-            docker rm -f node-main
+          if docker ps -a --format '{{.Names}}' | grep -q '^nodemain$'; then
+            docker rm -f nodemain
           fi
-          docker run -d --name node-main -e PORT=3000 -p 3000:3000 ${IMAGE_NAME}
+          docker run -d --name nodemain -e PORT=3000 -p 3000:3000 ${IMAGE_NAME}
         '''
       }
     }

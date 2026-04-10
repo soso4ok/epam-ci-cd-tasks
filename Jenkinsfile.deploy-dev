@@ -14,9 +14,9 @@ pipeline {
             error('DOCKERHUB_REPOSITORY is required for Deploy_to_dev.')
           }
           if (params.DOCKERHUB_REPOSITORY.contains('/')) {
-            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:dev-${params.IMAGE_TAG}"
+            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:nodedev-${params.IMAGE_TAG}"
           } else {
-            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/dev:${params.IMAGE_TAG}"
+            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/nodedev:${params.IMAGE_TAG}"
           }
         }
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -33,10 +33,10 @@ pipeline {
       steps {
         sh '''
           set -e
-          if docker ps -a --format '{{.Names}}' | grep -q '^node-dev$'; then
-            docker rm -f node-dev
+          if docker ps -a --format '{{.Names}}' | grep -q '^nodedev$'; then
+            docker rm -f nodedev
           fi
-          docker run -d --name node-dev -e PORT=3000 -p 3001:3000 ${IMAGE_NAME}
+          docker run -d --name nodedev -e PORT=3000 -p 3001:3000 ${IMAGE_NAME}
         '''
       }
     }

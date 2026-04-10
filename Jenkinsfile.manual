@@ -17,11 +17,11 @@ pipeline {
         script {
           if (params.TARGET_ENV == 'main') {
             env.IMAGE_BASE = 'nodemain'
-            env.CONTAINER_NAME = 'node-main'
+            env.CONTAINER_NAME = 'nodemain'
             env.APP_PORT = '3000'
           } else {
             env.IMAGE_BASE = 'nodedev'
-            env.CONTAINER_NAME = 'node-dev'
+            env.CONTAINER_NAME = 'nodedev'
             env.APP_PORT = '3001'
           }
 

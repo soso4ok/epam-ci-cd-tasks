@@ -1,15 +1,15 @@
 pipeline {
   agent any
 
-  tools {
-    nodejs "Node 7.8.0"
+  options {
+    timestamps()
   }
 
   environment {
     IMAGE_TAG = "v1.0"
     APP_INTERNAL_PORT = "3000"
     DOCKERHUB_REPOSITORY = ""
-    TRIGGER_DEPLOY_JOBS = "false"
+    ENABLE_DOWNSTREAM_DEPLOY = "true"
   }
 
   stages {
@@ -25,18 +25,20 @@ pipeline {
           if (env.BRANCH_NAME == 'main') {
             env.TARGET_ENV = 'main'
             env.IMAGE_BASE = 'nodemain'
-            env.CONTAINER_NAME = 'node-main'
+            env.CONTAINER_NAME = 'nodemain'
             env.APP_PORT = '3000'
           } else if (env.BRANCH_NAME == 'dev') {
             env.TARGET_ENV = 'dev'
             env.IMAGE_BASE = 'nodedev'
-            env.CONTAINER_NAME = 'node-dev'
+            env.CONTAINER_NAME = 'nodedev'
             env.APP_PORT = '3001'
           } else {
             error("Unsupported branch '${env.BRANCH_NAME}'. Use main or dev.")
           }
 
           env.IMAGE_NAME = "${env.IMAGE_BASE}:${env.IMAGE_TAG}"
+          env.DOCKER_REMOTE_IMAGE = ""
+
           if (env.DOCKERHUB_REPOSITORY?.trim()) {
             if (env.DOCKERHUB_REPOSITORY.contains('/')) {
               env.DOCKER_REMOTE_IMAGE = "${env.DOCKERHUB_REPOSITORY}:${env.IMAGE_BASE}-${env.IMAGE_TAG}"
@@ -55,7 +57,25 @@ pipeline {
       }
     }
 
+    stage('Dockerfile lint (Hadolint)') {
+      agent {
+        docker {
+          image 'hadolint/hadolint:latest-debian'
+          reuseNode true
+        }
+      }
+      steps {
+        sh 'hadolint --failure-threshold error Dockerfile'
+      }
+    }
+
     stage('Build') {
+      agent {
+        docker {
+          image 'node:20-alpine'
+          reuseNode true
+        }
+      }
       steps {
         sh 'npm install'
         sh 'npm run build'
@@ -63,6 +83,12 @@ pipeline {
     }
 
     stage('Test') {
+      agent {
+        docker {
+          image 'node:20-alpine'
+          reuseNode true
+        }
+      }
       steps {
         sh 'CI=true npm test -- --watchAll=false'
       }
@@ -74,9 +100,19 @@ pipeline {
       }
     }
 
+    stage('Vulnerability scan (Trivy)') {
+      steps {
+        sh '''
+          set -e
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.56.2 image --no-progress --severity HIGH,CRITICAL --exit-code 0 ${IMAGE_NAME}
+        '''
+      }
+    }
+
     stage('Push Docker image') {
       when {
-        expression { return env.DOCKERHUB_REPOSITORY?.trim() }
+        expression { return env.DOCKER_REMOTE_IMAGE?.trim() }
       }
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -104,7 +140,9 @@ pipeline {
 
     stage('Trigger environment deployment job') {
       when {
-        expression { return env.TRIGGER_DEPLOY_JOBS == 'true' }
+        expression {
+          return env.DOCKER_REMOTE_IMAGE?.trim() && env.ENABLE_DOWNSTREAM_DEPLOY == 'true'
+        }
       }
       steps {
         script {
