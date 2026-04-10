@@ -3,9 +3,6 @@ def call(String dockerhubRepository, String imageBase, String imageTag) {
     return ''
   }
 
-  if (dockerhubRepository.contains('/')) {
-    return "${dockerhubRepository}:${imageBase}-${imageTag}"
-  }
-
-  return "${dockerhubRepository}/${imageBase}:${imageTag}"
+  def dockerNamespace = dockerhubRepository.tokenize('/')[0]
+  return "${dockerNamespace}/${imageBase}:${imageTag}"
 }

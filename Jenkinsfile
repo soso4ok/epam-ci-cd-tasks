@@ -40,11 +40,8 @@ pipeline {
           env.DOCKER_REMOTE_IMAGE = ""
 
           if (env.DOCKERHUB_REPOSITORY?.trim()) {
-            if (env.DOCKERHUB_REPOSITORY.contains('/')) {
-              env.DOCKER_REMOTE_IMAGE = "${env.DOCKERHUB_REPOSITORY}:${env.IMAGE_BASE}-${env.IMAGE_TAG}"
-            } else {
-              env.DOCKER_REMOTE_IMAGE = "${env.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${env.IMAGE_TAG}"
-            }
+            def dockerNamespace = env.DOCKERHUB_REPOSITORY.tokenize('/')[0]
+            env.DOCKER_REMOTE_IMAGE = "${dockerNamespace}/${env.IMAGE_BASE}:${env.IMAGE_TAG}"
           }
 
           echo "Environment: ${env.TARGET_ENV}"
