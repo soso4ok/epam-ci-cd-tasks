@@ -1,41 +1,41 @@
 pipeline {
-  agent any
+    agent any
 
-  parameters {
-    string(name: 'IMAGE_TAG', defaultValue: 'v1.0', description: 'Docker image tag')
-    string(name: 'DOCKERHUB_REPOSITORY', defaultValue: '', description: 'Docker Hub namespace/repository (example: username/repo)')
-  }
-
-  stages {
-    stage('Pull dev image') {
-      steps {
-        script {
-          if (!params.DOCKERHUB_REPOSITORY?.trim()) {
-            error('DOCKERHUB_REPOSITORY is required for Deploy_to_dev.')
-          }
-          if (params.DOCKERHUB_REPOSITORY.contains('/')) {
-            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:dev-${params.IMAGE_TAG}"
-        }
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh '''
-            set -e
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker pull ${IMAGE_NAME}
-          '''
-        }
-      }
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'v1.0', description: 'Docker image tag')
+        string(name: 'DOCKERHUB_REPOSITORY', defaultValue: '', description: 'Docker Hub namespace/repository (example: username/repo)')
     }
 
-    stage('Deploy dev') {
-      steps {
-        sh '''
-          set -e
-          if docker ps -a --format '{{.Names}}' | grep -q '^node-dev$'; then
-            docker rm -f node-dev
-          fi
-          docker run -d --name node-dev -e PORT=3000 -p 3001:3000 ${IMAGE_NAME}
-        '''
-      }
+    stages {
+        stage('Pull dev image') {
+            steps {
+                script {
+                    if (!params.DOCKERHUB_REPOSITORY?.trim()) {
+                        error('DOCKERHUB_REPOSITORY is required for Deploy_to_dev.')
+                    }
+                    env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:dev-${params.IMAGE_TAG}"
+                }
+
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        set -e
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker pull ${IMAGE_NAME}
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy dev') {
+            steps {
+                sh '''
+                    set -e
+                    if docker ps -a --format '{{.Names}}' | grep -q '^node-dev$'; then
+                        docker rm -f node-dev
+                    fi
+                    docker run -d --name node-dev -e PORT=3000 -p 3001:3000 ${IMAGE_NAME}
+                '''
+            }
+        }
     }
-  }
 }
