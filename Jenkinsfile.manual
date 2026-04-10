@@ -27,7 +27,11 @@ pipeline {
 
           env.IMAGE_NAME = "${env.IMAGE_BASE}:${params.IMAGE_TAG}"
           if (params.DOCKERHUB_REPOSITORY?.trim()) {
-            env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${params.IMAGE_TAG}"
+            if (params.DOCKERHUB_REPOSITORY.contains('/')) {
+              env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:${env.IMAGE_BASE}-${params.IMAGE_TAG}"
+            } else {
+              env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${params.IMAGE_TAG}"
+            }
           }
 
           echo "Target env: ${params.TARGET_ENV}"
@@ -66,4 +70,3 @@ pipeline {
     }
   }
 }
-

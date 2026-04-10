@@ -38,12 +38,19 @@ pipeline {
 
           env.IMAGE_NAME = "${env.IMAGE_BASE}:${env.IMAGE_TAG}"
           if (env.DOCKERHUB_REPOSITORY?.trim()) {
-            env.DOCKER_REMOTE_IMAGE = "${env.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${env.IMAGE_TAG}"
+            if (env.DOCKERHUB_REPOSITORY.contains('/')) {
+              env.DOCKER_REMOTE_IMAGE = "${env.DOCKERHUB_REPOSITORY}:${env.IMAGE_BASE}-${env.IMAGE_TAG}"
+            } else {
+              env.DOCKER_REMOTE_IMAGE = "${env.DOCKERHUB_REPOSITORY}/${env.IMAGE_BASE}:${env.IMAGE_TAG}"
+            }
           }
 
           echo "Environment: ${env.TARGET_ENV}"
           echo "Port: ${env.APP_PORT}"
           echo "Local image: ${env.IMAGE_NAME}"
+          if (env.DOCKER_REMOTE_IMAGE?.trim()) {
+            echo "Remote image: ${env.DOCKER_REMOTE_IMAGE}"
+          }
         }
       }
     }
@@ -114,4 +121,3 @@ pipeline {
     }
   }
 }
-
