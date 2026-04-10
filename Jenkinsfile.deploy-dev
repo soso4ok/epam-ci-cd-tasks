@@ -13,7 +13,7 @@ pipeline {
           if (!params.DOCKERHUB_REPOSITORY?.trim()) {
             error('DOCKERHUB_REPOSITORY is required for Deploy_to_dev.')
           }
-          env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}/${params.IMAGE_TAG}"
+          env.IMAGE_NAME = "${params.DOCKERHUB_REPOSITORY}:${params.IMAGE_TAG}"
         }
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
