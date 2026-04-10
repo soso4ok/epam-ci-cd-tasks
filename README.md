@@ -62,8 +62,8 @@ Pipeline stages:
 1. Checkout
 2. Prepare environment by branch
 3. Dockerfile lint with Hadolint
-4. Build in Docker agent (`node:20-alpine`)
-5. Test in Docker agent (`node:20-alpine`)
+4. Build in Docker agent (`node:20-alpine`) with `npm install`
+5. Test in Docker agent (`node:20-alpine`) with `npm test`
 6. Build Docker image
 7. Vulnerability scan with Trivy
 8. Push to Docker Hub (always, using `DOCKERHUB_REPOSITORY` namespace or credential username)
@@ -98,8 +98,8 @@ Create two regular Pipeline jobs:
 
 Both jobs use `IMAGE_TAG` and optional `DOCKERHUB_REPOSITORY`, pull canonical image names from Docker Hub, then deploy to:
 
-- main: `3000 -> 3000`
-- dev: `3001 -> 3000`
+- main: `docker run -d --expose 3000 -p 3000:3000 nodemain:v1.0`
+- dev: `docker run -d --expose 3001 -p 3001:3000 nodedev:v1.0`
 
 ## Shared Library (documentation)
 

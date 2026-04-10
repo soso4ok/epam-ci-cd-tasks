@@ -31,7 +31,7 @@ pipeline {
           if docker ps -a --format '{{.Names}}' | grep -q '^nodemain$'; then
             docker rm -f nodemain
           fi
-          docker run -d --name nodemain -e PORT=3000 -p 3000:3000 ${IMAGE_NAME}
+          docker run -d --name nodemain --expose 3000 -e PORT=3000 -p 3000:3000 ${IMAGE_NAME}
         '''
       }
     }

@@ -19,10 +19,12 @@ pipeline {
             env.IMAGE_BASE = 'nodemain'
             env.CONTAINER_NAME = 'nodemain'
             env.APP_PORT = '3000'
+            env.APP_EXPOSE_PORT = '3000'
           } else {
             env.IMAGE_BASE = 'nodedev'
             env.CONTAINER_NAME = 'nodedev'
             env.APP_PORT = '3001'
+            env.APP_EXPOSE_PORT = '3001'
           }
 
           env.IMAGE_NAME = "${env.IMAGE_BASE}:${params.IMAGE_TAG}"
@@ -61,7 +63,7 @@ pipeline {
           if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
             docker rm -f ${CONTAINER_NAME}
           fi
-          docker run -d --name ${CONTAINER_NAME} -e PORT=${APP_INTERNAL_PORT} -p ${APP_PORT}:${APP_INTERNAL_PORT} ${IMAGE_NAME}
+          docker run -d --name ${CONTAINER_NAME} --expose ${APP_EXPOSE_PORT} -e PORT=${APP_INTERNAL_PORT} -p ${APP_PORT}:${APP_INTERNAL_PORT} ${IMAGE_NAME}
         '''
       }
     }
